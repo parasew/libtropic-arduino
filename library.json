@@ -21,15 +21,11 @@
   },
   "build": {
     "srcFilter": [
-      "+<*>",
-      "-<src/sdk>"
+      "TODO"
     ],
     "libArchive": false,
     "flags": [
        "TODO"
-    ],
-    "cmake": {
-        "sourceDir": "."
-    }
+    ]
   }
 }

@@ -1,92 +1,179 @@
-import os
+from pathlib import Path
 import subprocess
-from SCons.Script import DefaultEnvironment
+import shlex
+import re
 
-# We need the global env for this script to work correctly
-Import("env")
+Import("env", "projenv")
 
-# --- Path Configuration ---
-# This script's directory is the root of the libtropic-arduino library
-this_lib_dir = env.Dir('.').abspath
+LIB_NAME_ON_DISK = "LibtropicArduino"
+BUILD_TARGET = "tropic"
+PIO_LIBTROPIC_BUILD_FLAGS_OPT = "libtropic_build_flags"
 
-# The libtropic SDK is in a predictable path as a submodule
-libtropic_src_dir = os.path.join(this_lib_dir, "third-party", "libtropic")
+# 1) Find PROJECT_LIBDEPS_DIR and current PIO environment name
+libdeps_root = env.get("PROJECT_LIBDEPS_DIR")
+pioenv = env.subst("$PIOENV")
+libdeps_root_path = Path(libdeps_root)
 
-if not os.path.isdir(libtropic_src_dir):
-    env.Exit(f"Error: Could not find 'libtropic' submodule at {libtropic_src_dir}")
+# Prefer the per-env libdeps folder
+libdeps_env_dir = (libdeps_root_path / pioenv) if pioenv else None
+if libdeps_env_dir and not libdeps_env_dir.is_dir():
+    libdeps_env_dir = libdeps_root_path
 
-# --- Helper for getting flags as strings ---
-def get_cmake_flag(env_var_name):
-    value = env.get(env_var_name)
-    if not value: return ""
-    # Correctly handle list of flags
-    if isinstance(value, list):
-        # Flatten list of lists if necessary
-        flat_list = []
-        for item in value:
-            if isinstance(item, list):
-                flat_list.extend(item)
-            else:
-                flat_list.append(item)
-        return " ".join(env.subst(v) for v in flat_list)
-    return env.subst(str(value))
+# 2) Locate the installed library folder inside libdeps
+library_dir = None
+if libdeps_env_dir:
+    candidate = libdeps_env_dir / LIB_NAME_ON_DISK
+    if candidate.is_dir():
+        library_dir = candidate
 
-# --- Build Configuration ---
-pio_env_name = env.get("PIOENV")
-# Use a build directory within the library to avoid project-level conflicts
-build_dir = os.path.join(this_lib_dir, ".pio", "build", pio_env_name)
-lib_path = os.path.join(build_dir, "libtropic-build", "libtropic.a")
+if library_dir is None:
+    # search recursively for a directory named LIB_NAME_ON_DISK under libdeps_root
+    for p in libdeps_root_path.rglob(LIB_NAME_ON_DISK):
+        if p.is_dir():
+            library_dir = p
+            break
 
-os.makedirs(build_dir, exist_ok=True)
+if library_dir is None:
+    raise RuntimeError(f"Could not find installed library '{LIB_NAME_ON_DISK}' under {libdeps_root!s}")
 
-# --- CMake Configuration ---
+# 3) Paths
+external_root = library_dir / "third-party" / "libtropic"
+build_dir = library_dir / "libtropic_build"
+hal_dir = external_root / "hal" / "port" / "arduino"
+
+# list HAL source files (if any)
+hal_sources = []
+for f in hal_dir.iterdir():
+    if f.suffix in (".c", ".cpp", ".cc") and f.is_file():
+        hal_sources.append(f)
+
+# 4) Configure & build libtropic with CMake using PlatformIO toolchain
+build_dir.mkdir(parents=True, exist_ok=True)
+
+cc = env.get("CC")
+cxx = env.get("CXX")
+ar = env.get("AR")
+
+# Base cmake args
 cmake_args = [
-    f"-DCMAKE_C_COMPILER={get_cmake_flag('CC')}",
-    f"-DCMAKE_CXX_COMPILER={get_cmake_flag('CXX')}",
-    f"-DCMAKE_C_FLAGS='{get_cmake_flag('CFLAGS')} {get_cmake_flag('CCFLAGS')}'",
-    f"-DCMAKE_CXX_FLAGS='{get_cmake_flag('CXXFLAGS')}'",
-    "-DCMAKE_SYSTEM_NAME=Generic",
-    "-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY",
+    "cmake",
+    "-S", str(external_root),
+    "-B", str(build_dir),
 ]
 
-# Pass project build flags (e.g., -D defines) to CMake
-custom_opts = env.GetProjectOption("build_flags", [])
-for opt in custom_opts:
-    if isinstance(opt, str) and opt.startswith("-D"):
-        cmake_args.append(opt)
+# pass toolchain compilers if provided by PlatformIO env
+if cc:
+    cmake_args.append(f"-DCMAKE_C_COMPILER={cc}")
+if cxx:
+    cmake_args.append(f"-DCMAKE_CXX_COMPILER={cxx}")
+if ar:
+    cmake_args.append(f"-DCMAKE_AR={ar}")
 
-# --- Environment for subprocess ---
-custom_env = os.environ.copy()
-custom_env["PATH"] = env["ENV"]["PATH"]
+# Read libtropic_build_flags from platformio.ini (per-env)
+libtropic_build_flags = env.GetProjectOption(PIO_LIBTROPIC_BUILD_FLAGS_OPT)
+try:
+    extra_tokens = shlex.split(libtropic_build_flags)
+except Exception:
+    extra_tokens = libtropic_build_flags.split()
+# Append as-is; expected tokens are -D... items (or other CMake options)
+cmake_args.extend(extra_tokens)
+print(f"Appending {PIO_LIBTROPIC_BUILD_FLAGS_OPT} to CMake args:", extra_tokens)
 
-# --- Run CMake to build the core static library ---
-# Re-configure only if the static library doesn't exist to speed up builds
-if not os.path.exists(lib_path):
-    print("Configuring and building libtropic static library...")
-    configure_cmd = ["cmake", "-S", this_lib_dir, "-B", build_dir] + cmake_args
-    # REMOVE capture_output=True from here
-    subprocess.run(configure_cmd, check=True, env=custom_env) 
+print("Running CMake configure:", " ".join(cmake_args))
+subprocess.check_call(cmake_args)
 
-    build_cmd = ["cmake", "--build", build_dir]
-    # AND REMOVE it from here
-    subprocess.run(build_cmd, check=True, env=custom_env)
-    print("libtropic.a built successfully.")
+print(f"Running CMake build (target '{BUILD_TARGET}')")
+subprocess.check_call(["cmake", "--build", str(build_dir), "--target", BUILD_TARGET])
 
-# --- Link the core library and set include paths ---
-# This part runs on every build
+# Find produced .a
+lib_static_path = build_dir / "libtropic.a"
+if not lib_static_path.is_file():
+    raise RuntimeError(f"Could not find produced static library in {build_dir}")
 
-# Add path to the generated libtropic.a
-env.Append(LIBPATH=[os.path.join(build_dir, "libtropic-build")])
+# Parse flags.make for target
+flags_make_path = build_dir / "CMakeFiles" / f"{BUILD_TARGET}.dir" / "flags.make"
+parsed_defines = []
 
-# Link libtropic.a
-env.Append(LIBS=["tropic"])
+# Get defines used for building libtropic
+if flags_make_path and flags_make_path.is_file():
+    print("Using flags.make:", flags_make_path)
+    with flags_make_path.open("r", encoding="utf-8", errors="ignore") as f:
+        content = f.read()
 
-# Add include paths needed by the HAL files and the user's sketch
-env.Append(CPPPATH=[
-    os.path.join(libtropic_src_dir, "include"),
-    os.path.join(libtropic_src_dir, "hal", "include"),
-    # The HAL source files also need this path to find their own header
-    os.path.join(libtropic_src_dir, "hal", "port", "arduino")
-])
+    # collect both C_DEFINES and CXX_DEFINES if present
+    define_flags = []
+    for name in ("C_DEFINES", "CXX_DEFINES"):
+        m = re.search(r'^\s*' + re.escape(name) + r'\s*=\s*(.+)$', content, flags=re.MULTILINE)
+        if m:
+            define_flags.append(m.group(1).strip())
 
-print("Successfully configured libtropic for PlatformIO.")
+    if not define_flags:
+        raise RuntimeError("No C_DEFINES/CXX_DEFINES found in flags.make")
+else:
+    raise RuntimeError("flags.make for target not found; skipping define export")
+
+# Append parsed defines to env and projenv so subsequent compilation sees same macros
+print("Injecting build flags into the main project environment:")
+for flag in define_flags:
+    print(f"  -> {flag}")
+env.ProcessFlags(" ".join(define_flags))
+projenv.ProcessFlags(" ".join(define_flags))
+
+# 5) Prepare include paths: libtropic includes + per-env libdeps includes
+cpppaths = []
+cpppaths.append(str(external_root / "include"))
+cpppaths.append(str(external_root / "src"))
+cpppaths.append(str(hal_dir))
+
+if libdeps_env_dir and libdeps_env_dir.is_dir():
+    for libfolder in libdeps_env_dir.iterdir():
+        libfolder_path = libfolder
+        if not libfolder_path.is_dir():
+            continue
+        inc1 = libfolder_path / "include"
+        inc2 = libfolder_path / "src"
+        inc3 = libfolder_path / "src" / "include"
+        if inc1.is_dir():
+            cpppaths.append(str(inc1))
+        if inc2.is_dir():
+            cpppaths.append(str(inc2))
+        if inc3.is_dir():
+            cpppaths.append(str(inc3))
+        cpppaths.append(str(libfolder_path))
+
+# Dedupe while preserving order
+seen = set()
+cpppaths_filtered = []
+for p in cpppaths:
+    if p and Path(p).is_dir() and p not in seen:
+        seen.add(p)
+        cpppaths_filtered.append(p)
+
+if cpppaths_filtered:
+    env.Append(CPPPATH=cpppaths_filtered)
+    print("Added CPPPATH entries for libtropic and libdeps (per-env):")
+    for p in cpppaths_filtered:
+        print("  ", p)
+
+# 6) Add the built static library for linking (LIBPATH + LIBS with short name)
+libfilename = lib_static_path.name
+if libfilename.startswith("lib") and libfilename.endswith(".a"):
+    lib_shortname = libfilename[3:-2]
+else:
+    lib_shortname = lib_static_path.stem
+
+env.Append(LIBPATH=[str(build_dir)])
+env.Append(LIBS=[lib_shortname])
+
+print("Will link static lib:", str(lib_static_path), "as -l" + lib_shortname)
+
+# 7) Compile HAL sources into project build (after CPPPATH and CPPDEFINES added)
+build_dir_expanded = env.subst("$BUILD_DIR")
+hal_target_dir = str(Path(build_dir_expanded) / ("lib_" + lib_shortname + "_hal"))
+
+if not hal_sources:
+    # keep the same failure semantics as before
+    raise RuntimeError("No HAL sources found at", str(hal_dir))
+
+print("Compiling HAL sources into project build from", str(hal_dir))
+env.BuildSources(hal_target_dir, str(hal_dir))

@@ -17,10 +17,6 @@
   "frameworks": "arduino",
   "platforms": "*",
   "build": {
-    "extraScript": "extra_script.py",
-    "srcFilter": [
-      "+<src/>",
-      "+<third-party/libtropic/hal/port/arduino/libtropic_port_arduino.cpp>"
-    ]
+    "extraScript": "extra_script.py"
   }
 }

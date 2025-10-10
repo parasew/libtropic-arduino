@@ -37,7 +37,7 @@ if library_dir is None:
     raise RuntimeError(f"Could not find installed library '{LIB_NAME_ON_DISK}' under {libdeps_root!s}")
 
 # 3) Paths
-external_root = library_dir / "third-party" / "libtropic"
+external_root = library_dir / "libtropic"
 build_dir = library_dir / "libtropic_build"
 hal_dir = external_root / "hal" / "port" / "arduino"
 

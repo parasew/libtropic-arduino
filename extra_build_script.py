@@ -54,11 +54,19 @@ cc = env.get("CC")
 cxx = env.get("CXX")
 ar = env.get("AR")
 
+# Get the compiler flags from the PlatformIO environment
+# This will include critical flags like -mthumb, -mcpu, -mfloat-abi, etc.
+c_flags = " ".join(env.get("CCFLAGS", []))
+
 # Base cmake args
 cmake_args = [
     "cmake",
     "-S", str(external_root),
     "-B", str(build_dir),
+    # Add this line to pass linker flags during the initial test
+    "-DCMAKE_EXE_LINKER_FLAGS=--specs=nosys.specs",
+    f"-DCMAKE_C_FLAGS={c_flags}",
+    f"-DCMAKE_CXX_FLAGS={c_flags}" # Use the same flags for C++
 ]
 
 # pass toolchain compilers if provided by PlatformIO env

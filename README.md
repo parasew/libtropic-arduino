@@ -1,8 +1,8 @@
 # libtropic-arduino
 This repository implements the LibtropicArduino library, which serves as an example of how to use our official SDK, [Libtropic](https://github.com/tropicsquare/libtropic), on Arduino-based platforms.
 
-## Repository structure
-The directory structure is compliant with the requirements of the **Arduino Library Manager** and **PlatformIO Registry**, but was not published in neither of these yet.
+The LibtropicArduino library is implemented in a way to be compliant with the requirements of the **Arduino Library Manager** and **PlatformIO Registry**, but was not published in neither of these yet.
+
 > [!WARNING]
 > The LibtropicArduino library was tested using PlatformIO only!
 
@@ -13,6 +13,7 @@ The directory structure is compliant with the requirements of the **Arduino Libr
 >
 > If you are using other boards, you will have to handle the dependency on MbedTLS yourself.
 
+## Repository structure
 - `examples/`: Basic examples, showing how to use the Arduino C++ wrapper for Libtropic.
 - `libtropic/`: Libtropic SDK as a submodule.
 - `src/`: Implementation of the Arduino C++ wrapper for Libtropic.
@@ -22,7 +23,7 @@ The directory structure is compliant with the requirements of the **Arduino Libr
 ## Using LibtropicArduino Inside PlatformIO
 1. Create a new PlatformIO project.
 2. Select your board and the Arduino framework.
-3. Inside `platformio.ini`, add a dependency on this repository to the target for your board:
+3. Inside the project's `platformio.ini`, add a dependency on this repository to the target for your board:
     ```ini
     lib_deps = 
         https://github.com/tropicsquare/libtropic-arduino.git

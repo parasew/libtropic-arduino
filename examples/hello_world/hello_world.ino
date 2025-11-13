@@ -33,8 +33,13 @@
 // MbedTLS's PSA Crypto library.
 #include "psa/crypto.h"
 
-// Platform's pin number where TROPIC01's Chip Select (CS) is connected to.
-#define TROPIC01_CS_PIN 5
+// TROPIC01 related macros.
+#define TROPIC01_CS_PIN 5  // Platform's pin number where TROPIC01's SPI Chip Select pin is connected to.
+#if LT_USE_INT_PIN
+#define TROPIC01_INT_PIN \
+    4  // Platform's pin number where TROPIC01's interrupt pin is connected to.
+       // Is necessary only when -DLT_USE_INT_PIN=1 was set in build_flags.
+#endif
 
 // Pairing Key macros for establishing a Secure Channel Session with TROPIC01.
 // Using the default Pairing Key slot 0 of Production TROPIC01 chips.
@@ -75,7 +80,11 @@ void setup()
     }
 
     // Init Tropic01 instance.
+#if LT_USE_INT_PIN
+    returnVal = tropic01.begin(TROPIC01_CS_PIN, TROPIC01_INT_PIN);
+#else
     returnVal = tropic01.begin(TROPIC01_CS_PIN);
+#endif
     if (returnVal != LT_OK) {
         Serial.print("Tropic01.begin() failed, returnVal=");
         Serial.println(returnVal);

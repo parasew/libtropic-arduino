@@ -70,16 +70,25 @@ void errorHandler(void)
 void setup()
 {
     Serial.begin(115200);
+    Serial.println("===============================================================");
+    Serial.println("================ TROPIC01 Hello World Example =================");
+    Serial.println("===============================================================");
+    Serial.println();
+
+    Serial.println("---------------------------- Setup ----------------------------");
 
     // Init MbedTLS's PSA Crypto.
+    Serial.println("Initializing MbedTLS PSA Crypto...");
     psa_status_t mbedtlsInitStatus = psa_crypto_init();
     if (mbedtlsInitStatus != PSA_SUCCESS) {
         Serial.print("MbedTLS's PSA Crypto initialization failed, psa_status_t=");
         Serial.println(mbedtlsInitStatus);
         errorHandler();
     }
+    Serial.println("  OK");
 
     // Init Tropic01 instance.
+    Serial.println("Initializing the Tropic01 instance...");
 #if LT_USE_INT_PIN
     returnVal = tropic01.begin(TROPIC01_CS_PIN, TROPIC01_INT_PIN);
 #else
@@ -90,18 +99,26 @@ void setup()
         Serial.println(returnVal);
         errorHandler();
     }
+    Serial.println("  OK");
 
     // Start Secure Channel Session with TROPIC01.
+    Serial.println("Starting Secure Channel Session with TROPIC01...");
     returnVal = tropic01.secureSessionStart(PAIRING_KEY_PRIV, PAIRING_KEY_PUB, PAIRING_KEY_SLOT);
     if (returnVal != LT_OK) {
         Serial.print("Tropic01.secureSessionStart() failed, returnVal=");
         Serial.println(returnVal);
         errorHandler();
     }
+    Serial.println("  OK");
+
+    Serial.println("---------------------------------------------------------------");
+    Serial.println();
+    Serial.println("---------------------------- Loop -----------------------------");
 }
 
 void loop()
 {
+    Serial.println("--");
     // Print our Ping message we want to send.
     Serial.print("Sending the following Ping message to TROPIC01: \"");
     Serial.print((char*)pingMsgToSend);
@@ -114,11 +131,13 @@ void loop()
         Serial.println(returnVal);
         errorHandler();
     }
+    Serial.println("  OK");
 
     // Print received Ping message from TROPIC01.
     Serial.print("Ping message received from TROPIC01: \"");
     Serial.print((char*)pingMsgToReceive);
     Serial.println("\"");
+    Serial.println("--");
     Serial.println();
 
     // Wait some time before the next Ping.

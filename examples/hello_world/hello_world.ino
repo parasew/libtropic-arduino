@@ -53,6 +53,12 @@ lt_ret_t returnVal;                               // Used for return values of T
 uint8_t pingMsgToSend[] = "Hello World!";         // Ping message we will send to TROPIC01 via the Secure Channel.
 uint8_t pingMsgToReceive[sizeof(pingMsgToSend)];  // Buffer for receiving the Ping message from TROPIC01.
 
+#if LT_SEPARATE_L3_BUFF
+// It is possible to define user's own buffer for L3 Layer data.
+// This is handy when using multiple instances of lt_handle_t - only one buffer for all instances will be used.
+uint8_t l3_buffer[LT_SIZE_OF_L3_BUFF] __attribute__((aligned(16))) = {0};
+#endif
+
 // Used when initializing MbedTLS's PSA Crypto.
 psa_status_t mbedtlsInitStatus;
 
@@ -89,11 +95,22 @@ void setup()
 
     // Init Tropic01 instance.
     Serial.println("Initializing the Tropic01 instance...");
+    // Because tropic01.begin() has different number of parameters depending on the used Libtropic
+    // CMake options, we are wrapping its call the directives, so this example is functional with
+    // every supported Libtropic CMake option without making any changes to it.
+    // This is of course not necessary in your application, if you are not frequently changing the
+    // Libtropic CMake options that affect the tropic01.begin() parameters.
+    returnVal = tropic01.begin(TROPIC01_CS_PIN
 #if LT_USE_INT_PIN
-    returnVal = tropic01.begin(TROPIC01_CS_PIN, TROPIC01_INT_PIN);
-#else
-    returnVal = tropic01.begin(TROPIC01_CS_PIN);
+                               ,
+                               TROPIC01_INT_PIN
 #endif
+#if LT_SEPARATE_L3_BUFF
+                               ,
+                               l3_buffer, sizeof(l3_buffer)
+#endif
+    );
+
     if (returnVal != LT_OK) {
         Serial.print("Tropic01.begin() failed, returnVal=");
         Serial.println(returnVal);
@@ -121,7 +138,7 @@ void loop()
     Serial.println("--");
     // Print our Ping message we want to send.
     Serial.print("Sending the following Ping message to TROPIC01: \"");
-    Serial.print((char*)pingMsgToSend);
+    Serial.print((char *)pingMsgToSend);
     Serial.println("\"");
 
     // Ping TROPIC01 with our message.
@@ -135,7 +152,7 @@ void loop()
 
     // Print received Ping message from TROPIC01.
     Serial.print("Ping message received from TROPIC01: \"");
-    Serial.print((char*)pingMsgToReceive);
+    Serial.print((char *)pingMsgToReceive);
     Serial.println("\"");
     Serial.println("--");
     Serial.println();

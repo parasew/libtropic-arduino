@@ -7,8 +7,12 @@ lt_ret_t Tropic01::begin(const uint16_t spi_cs_pin
                          ,
                          const uint16_t int_gpio_pin
 #endif
+#if LT_SEPARATE_L3_BUFF
                          ,
-                         const unsigned int rng_seed, SPIClass& spi, SPISettings spi_settings)
+                         uint8_t *l3_buff, const uint16_t l3_buff_len
+#endif
+                         ,
+                         const unsigned int rng_seed, SPIClass &spi, SPISettings spi_settings)
 {
     // Initialize device structure
     this->device.spi_cs_pin = spi_cs_pin;
@@ -23,6 +27,11 @@ lt_ret_t Tropic01::begin(const uint16_t spi_cs_pin
 
     // Initialize crypto context structure and pass to handle
     this->handle.l3.crypto_ctx = &this->crypto_ctx;
+
+#if LT_SEPARATE_L3_BUFF
+    this->handle.l3.buff = l3_buff;
+    this->handle.l3.buff_len = l3_buff_len;
+#endif
 
     return lt_init(&this->handle);
 }
@@ -44,14 +53,14 @@ lt_ret_t Tropic01::end(void)
     return ret_deinit;
 }
 
-lt_ret_t Tropic01::secureSessionStart(const uint8_t* shipriv, const uint8_t* shipub, const lt_pkey_index_t pkey_index)
+lt_ret_t Tropic01::secureSessionStart(const uint8_t *shipriv, const uint8_t *shipub, const lt_pkey_index_t pkey_index)
 {
     return lt_verify_chip_and_start_secure_session(&this->handle, shipriv, shipub, pkey_index);
 }
 
 lt_ret_t Tropic01::secureSessionEnd(void) { return lt_session_abort(&this->handle); }
 
-lt_ret_t Tropic01::ping(const uint8_t* msg_out, uint8_t* msg_in, const uint16_t msg_len)
+lt_ret_t Tropic01::ping(const uint8_t *msg_out, uint8_t *msg_in, const uint16_t msg_len)
 {
     return lt_ping(&this->handle, msg_out, msg_in, msg_len);
 }

@@ -17,13 +17,17 @@ class Tropic01 {
                    ,
                    const uint16_t int_gpio_pin
 #endif
+#if LT_SEPARATE_L3_BUFF
                    ,
-                   const unsigned int rng_seed = random(), SPIClass& spi = ::SPI,
+                   uint8_t *l3_buff, const uint16_t l3_buff_len
+#endif
+                   ,
+                   const unsigned int rng_seed = random(), SPIClass &spi = ::SPI,
                    SPISettings spi_settings = SPISettings(10000000, MSBFIRST, SPI_MODE0));
     lt_ret_t end(void);
-    lt_ret_t secureSessionStart(const uint8_t* shipriv, const uint8_t* shipub, const lt_pkey_index_t pkey_index);
+    lt_ret_t secureSessionStart(const uint8_t *shipriv, const uint8_t *shipub, const lt_pkey_index_t pkey_index);
     lt_ret_t secureSessionEnd(void);
-    lt_ret_t ping(const uint8_t* msg_out, uint8_t* msg_in, const uint16_t msg_len);
+    lt_ret_t ping(const uint8_t *msg_out, uint8_t *msg_in, const uint16_t msg_len);
 
    private:
     lt_dev_arduino_t device;

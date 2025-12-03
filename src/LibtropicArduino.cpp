@@ -1,3 +1,11 @@
+/**
+ * @file LibtropicArduino.cpp
+ * @brief Implementation of the Libtropic C++ wrapper.
+ * @copyright Copyright (c) 2020-2025 Tropic Square s.r.o.
+ *
+ * @license For the license see file LICENSE.txt file in the root directory of this source tree.
+ */
+
 #include "LibtropicArduino.h"
 
 Tropic01::~Tropic01(void) { this->end(); }

@@ -62,9 +62,9 @@ The LibtropicArduino library is implemented in a way to be compliant with the re
            - `spi_cs_pin`: GPIO pin where TROPIC01's CS pin is connected.
            - `int_gpio_pin` (exists only if [LT_USE_INT_PIN](https://tropicsquare.github.io/libtropic/latest/get_started/integrating_libtropic/how_to_configure/#lt_use_int_pin)=1): GPIO pin where TROPIC01's interrupt pin is connected.
            - `l3_buff` (exists only if [LT_SEPARATE_L3_BUFF](https://tropicsquare.github.io/libtropic/latest/get_started/integrating_libtropic/how_to_configure/#lt_separate_l3_buff)=1): User-defined L3 buffer.
-           - `l3_buff_len` (exists only if [LT_SEPARATE_L3_BUFF](https://tropicsquare.github.io/libtropic/latest/get_started/integrating_libtropic/how_to_configure/#lt_separate_l3_buff)=1): Length of `lf_buff`
+           - `l3_buff_len` (exists only if [LT_SEPARATE_L3_BUFF](https://tropicsquare.github.io/libtropic/latest/get_started/integrating_libtropic/how_to_configure/#lt_separate_l3_buff)=1): Length of `lf_buff`.
            - `rng_seed`: Seed for the PRNG (defaults to random()).
-           - `spi`: Instance of [SPIClass]() to use, defaults to default SPI instance set by `<SPI.h>`.
+           - `spi`: Instance of SPIClass to use, defaults to the default SPI instance set by `<SPI.h>`.
            - `spi_settings`: SPI settings, defaults to tested values. If you want to change them, keep `SPISettings.dataOrder=MSBFIRST` and `SPISettings.dataMode=SPI_MODE0` (required by TROPIC01).
     4. Implement the rest of your program. Refer to this repository's `examples/` folder for examples on how to use the LibtropicArduino library to communicate with TROPIC01.
     5. At the end of the program, free MbedTLS's PSA Crypto resources (could be ommitted if you know what you are doing):

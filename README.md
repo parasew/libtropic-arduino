@@ -11,7 +11,7 @@ The LibtropicArduino library is implemented in a way to be compliant with the re
 >
 > If you are using ESP32 boards, PlatformIO will most likely use the [ESP32 Arduino core](https://github.com/espressif/arduino-esp32), which includes MbedTLS with PSA Crypto library by default, so the dependency does not have to be handled manually.
 >
-> If you are using other boards, you will have to handle the dependency on MbedTLS yourself.
+> If you are using other boards, you will have to handle the MbedTLS dependency yourself.
 
 ## Repository structure
 - `examples/`: Basic examples, showing how to use the Arduino C++ wrapper for Libtropic.

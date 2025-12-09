@@ -170,7 +170,7 @@ void loop()
 
     // Print received Ping message from TROPIC01.
     Serial.print("Ping message received from TROPIC01: \"");
-    Serial.print((char *)pingMsgToReceive);
+    Serial.print(pingMsgToReceive);
     Serial.println("\"");
     Serial.println("--");
     Serial.println();

@@ -124,7 +124,7 @@ void setup()
     Serial.println("  OK");
 
     // Init Tropic01 resources.
-    Serial.println("Initializing the Tropic01 resources...");
+    Serial.println("Initializing Tropic01 resources...");
     returnVal = tropic01.begin();
 
     if (returnVal != LT_OK) {

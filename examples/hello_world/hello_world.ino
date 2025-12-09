@@ -36,7 +36,7 @@
 // Arduino libraries.
 #include <Arduino.h>
 #include <SPI.h>
-// Libtropic library.
+// LibtropicArduino library.
 #include <LibtropicArduino.h>
 // MbedTLS's PSA Crypto library.
 #include "psa/crypto.h"

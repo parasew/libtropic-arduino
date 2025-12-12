@@ -28,7 +28,7 @@ This library provides support for using the TROPIC01 secure element in the Ardui
     ```
 
 
-4. Inside your project's `src/` folder, create `main.cpp` and copy the whole contents of `example/hello_world.ino` into it.
+4. Inside your project's `src/` folder, create `main.cpp` and copy the whole contents of `examples/hello_world/hello_world.ino` into it.
 5. Build the project: click on the **PlatformIO: Build** button in the bottom menu. In your terminal, you should see a similar output to this:
     ```
     ...
